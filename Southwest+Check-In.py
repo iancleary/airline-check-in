@@ -14,7 +14,7 @@ import threading # multi thread browsers to log in all passengers at the same ti
 ##############################################################################
 ##############################################################################
 
-# Login list (confirmationNumber, firstName, lastName)
+# Login list (confirmationNumber, firstName, lastName, 'email' or 'text', area code, phone prefix, phone number, email address)
 # append as many users as desired
 passengerList = []
 passengerList.append(['BT6TU9', 'Ian', 'Cleary', 'email', '480', '555', '1234', 'iansemail@gmail.com'])
