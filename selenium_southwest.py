@@ -2,11 +2,14 @@
 # https://github.com/iancleary
 # https://github.com/iancleary/airline-check-in
 # clearyia@gmail.com
-
+import os
 import time # sleep
 from selenium import webdriver # Browswer Automation
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.chrome.options import Options
 import threading # multi thread browsers to log in all passengers at the same time
+
+#from exceptions import Exception
 
 ##############################################################################
 ##############################################################################
@@ -17,9 +20,7 @@ import threading # multi thread browsers to log in all passengers at the same ti
 # Login list (confirmationNumber, firstName, lastName, 'email' or 'text', area code, phone prefix, phone number, email address)
 # append as many users as desired
 passengerList = []
-passengerList.append(['BT6TU9', 'Ian', 'Cleary', 'email', '480', '555', '1234', 'iansemail@gmail.com'])
-passengerList.append(['BGH4KT', 'Bob', 'Bobson', 'email', '317', '555', '2345', 'bobsemail@gmail.com'])
-passengerList.append(['BGH4KT', 'Jane', 'Doeson', 'email', '203', '555', '3456', 'janesemail@gmail.com'])
+passengerList.append(['M48GBP', 'Ian', 'Cleary', 'text', '4805551234', 'myemail@gmail.com'])
 
 ##############################################################################
 ##############################################################################
@@ -30,7 +31,20 @@ passengerList.append(['BGH4KT', 'Jane', 'Doeson', 'email', '203', '555', '3456',
 # Site Information
 URL = 'https://www.southwest.com/flight/retrieveCheckinDoc.html?clk=GSUBNAV-CHCKIN&forceNewSession=yes'
 
+DEBUG_XPATH = True
+DEBUG_CHROMEDRIVER_PATH = True
+
+HEADLESS = False
+
+FIRST_SCREEN_ATTEMPTS = 0
+SECOND_SCREEN_ATTEMPTS = 0
+THIRD_SCREEN_ATTEMPTS = 0
+
 #############################################################################
+
+import os
+def clear():
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 # functions to enter username, password, and click login
 def text_autofill(driver, text_xpath, text):
@@ -50,70 +64,103 @@ def click(driver, webElement_xpath):
 
 # Functions to script each log in screen
 def firstScreen(driver, passenger):
+    global FIRST_SCREEN_ATTEMPTS
+
     confirmationNumber_xpath = '//*[@id="confirmationNumber"]'
-    firstName_xpath = '//*[@id="firstName"]'
-    lastName_xpath = '//*[@id="lastName"]'
-    checkIn_xpath = '//*[@id="submitButton"]' #Check In button
+    firstName_xpath = '//*[@id="passengerFirstName"]'
+    lastName_xpath = '//*[@id="passengerLastName"]'
+    checkIn_xpath = '//*[@id="form-mixin--submit-button"]' #Check In button
 
     text_autofill(driver, confirmationNumber_xpath, passenger[0])
     text_autofill(driver, firstName_xpath, passenger[1])
     text_autofill(driver, lastName_xpath, passenger[2])
-    #time.sleep(1)
+    time.sleep(1)
     click(driver, checkIn_xpath)
+    
+    if DEBUG_XPATH:
+        clear()
+        print("1st screen: %s %s: Attempt %i" % (passenger[1], passenger[2], FIRST_SCREEN_ATTEMPTS))
+        FIRST_SCREEN_ATTEMPTS = FIRST_SCREEN_ATTEMPTS + 1  
     return
 
-def secondScreen(driver):
-    checkIn_2nd_Screen_xpath = '//*[@id="printDocumentsButton"]'
+def secondScreen(driver, passenger):
+    global SECOND_SCREEN_ATTEMPTS
+    
+    
+    #checkIn_2nd_Screen_xpath = '//*[@id="printDocumentsButton"]'
+    checkIn_2nd_Screen_xpath = '//*[@id="swa-content"]/div/div[2]/div/section/div/div/div[3]/button'
     click(driver, checkIn_2nd_Screen_xpath)
+
+    time.sleep(1)
+    if DEBUG_XPATH:
+        clear()
+        print("2nd screen: %s %s: Attempt %i" % (passenger[1], passenger[2], SECOND_SCREEN_ATTEMPTS))
+        SECOND_SCREEN_ATTEMPTS = SECOND_SCREEN_ATTEMPTS + 1
     return
 
 def thirdScreen(driver, passenger):
-    checkIn_3rd_screen_print_radio_xpath = '//*[@id="optionPrint"]'
+    print_button_xpath = '//*[@id="swa-content"]/div/div[2]/div/section/div/div/section/table/tbody/tr/td[1]/button'
 
-    checkIn_3rd_screen_email_radio_xpath = '//*[@id="optionEmail"]'
-    checkIn_3rd_screen_email_textBox_xpath = '//*[@id="emailAddress"]'
 
-    checkIn_3rd_screen_text_radio_xpath = '//*[@id="optionText"]'
-    checkIn_3rd_screen_text_area_code_xpath = '//*[@id="phoneArea"]'
-    checkIn_3rd_screen_text_phone_prefix_xpath = '//*[@id="phonePrefix"]'
-    checkIn_3rd_screen_text_phone_number_xpath = '//*[@id="phoneNumber"]'
+    email_button_xpath = '//*[@id="swa-content"]/div/div[2]/div/section/div/div/section/table/tbody/tr/td[2]/button'
+    email_textBox_xpath = '//*[@id="emailBoardingPass"]'
+    email_send_xpath = '//*[@id="form-mixin--submit-button"]'
 
-    checkIn_3rd_screen_check_in_button_xpath = '//*[@id="checkin_button"]'
-
+    text_button_xpath = '//*[@id="swa-content"]/div/div[2]/div/section/div/div/section/table/tbody/tr/td[3]/button'
+    text_phone_number_xpath = '//*[@id="textBoardingPass"]'
+    text_phone_number_send_xpath = '//*[@id="form-mixin--submit-button"]'
+    
     if(passenger[3] == 'text'):
-        click(driver, checkIn_3rd_screen_text_radio_xpath)
-        text_autofill(driver, checkIn_3rd_screen_text_area_code_xpath, passenger[4])
-        text_autofill(driver, checkIn_3rd_screen_text_phone_prefix_xpath, passenger[5])
-        text_autofill(driver, checkIn_3rd_screen_text_phone_number_xpath, passenger[6])
+        click(driver, text_button_xpath)
+        time.sleep(1)
+        text_autofill(driver, text_phone_number_xpath, passenger[4])
+        click(driver, text_phone_number_send_xpath)
+        
     elif(passenger[3] == 'email'):
-        click(driver, checkIn_3rd_screen_email_radio_xpath)
-        text_clear(driver, checkIn_3rd_screen_email_textBox_xpath)
-        text_autofill(driver, checkIn_3rd_screen_email_textBox_xpath, passenger[7])
-    time.sleep(1)
-    click(driver, checkIn_3rd_screen_check_in_button_xpath)
+        click(driver, email_button_xpath)
+        time.sleep(1)
+        text_autofill(driver, email_textBox_xpath, passenger[5])
+        click(driver, email_send_xpath)
+        
     return
 
 #############################################################################
 
 def loginSinglePassenger(passenger):
-    driver = webdriver.Chrome() # faster with one driver for entire list
+    cwd = os.getcwd()
+    path_to_chromedriver = '%s/chromedriver' % (cwd)
+    
+    chrome_options = Options()  
+    chrome_options.add_argument("--headless")
+
+    if DEBUG_CHROMEDRIVER_PATH:
+        print(path_to_chromedriver)
+
+    if HEADLESS:
+        driver = webdriver.Chrome(path_to_chromedriver, chrome_options=chrome_options) # faster with one driver for entire list
+    else:
+        driver = webdriver.Chrome(path_to_chromedriver) # faster with one driver for entire list
+    
     driver.get(URL)
     #time.sleep(1)
     firstScreen(driver, passenger)
-    #time.sleep(1)
+    time.sleep(2)
 
     #loop first screen until second screen appears (will only go through exactly 24 hours before flight)
     passFirstScreen = False
     while (passFirstScreen == False):
         try:
-            secondScreen(driver)
+            secondScreen(driver, passenger)
             passFirstScreen = True
         except NoSuchElementException:
             driver.get(URL)
             firstScreen(driver, passenger)
             
     # now third screen
+    #time.sleep(1)
     thirdScreen(driver, passenger)
+    
+    time.sleep(10)
     driver.quit()
     return
 
